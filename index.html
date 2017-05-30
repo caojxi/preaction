@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <script src="preact.js"></script>
+  </head>
+  <body>
+    <div id="a"></div>
+
+    <!-- Load Babel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.24.2/babel.js"></script>
+    <!-- Your custom script here -->
+    <script type="text/babel">
+    let { h, render, Component } = preact;  // import { ... } from 'preact';
+    /** @jsx h */
+
+    /*
+    render((
+      <div id="foo">
+        <span>Hello, world!</span>
+        <button onClick={ e => alert("hi!") }>Click Me</button>
+      </div>
+    ), document.getElementById('output'));
+    */
+
+    class Clock extends Component {
+      constructor() {
+        super();
+        // set initial time:
+        this.state.time = Date.now();
+      }
+
+      componentDidMount() {
+        // update time every second
+        this.timer = setInterval(() => {
+          this.setState({ time: Date.now() });
+        }, 1000);
+      }
+
+      componentWillUnmount() {
+        // stop when not renderable
+        clearInterval(this.timer);
+      }
+
+      render(props, state) {
+        let time = new Date(state.time).toLocaleTimeString();
+        return <span>{ time }</span>;
+      }
+    }
+
+    // render an instance of Clock into <body>:
+    render(<Clock />, document.getElementById('a'));
+    </script>
+  </body>
+
+</html>
