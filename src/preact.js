@@ -1,5 +1,6 @@
 const NON_DIMENSION_PROPS = {}
-'boxFlex boxFlexGroup columnCount fillOpacity flex flexGrow flexPositive flexShrink flexNegative fontWeight lineClamp lineHeight opacity order orphans strokeOpacity widows zIndex zoom'.split(' ').forEach(k => NON_DIMENSION_PROPS[k] = true)
+'boxFlex boxFlexGroup columnCount fillOpacity flex flexGrow flexPositive flexShrink flexNegative fontWeight lineClamp lineHeight opacity order orphans strokeOpacity widows zIndex zoom'
+	.split(' ').forEach(k => NON_DIMENSION_PROPS[k] = true)
 
 export class VNode {
 	constructor(nodeName, attributes, children) {
@@ -17,7 +18,7 @@ hooks.vnode = ({ attributes }) => {
 
 	let s = attributes.style
 	if (s && !s.substring) {
-		attributes.style = styleObjToCss(S)
+		attributes.style = styleObjToCss(s)
 	}
 
 	let c = attributes['class']
@@ -43,9 +44,7 @@ function styleObjToCss(s) {
 	for (const prop in s) {
 		if (s.hasOwnProperty(prop)) {
 			const val = s[prop]
-			str += jsToCss(prop)
-			str += sep
-			str += val
+			str += jsToCss(prop) + sep + val
 
 			if (typeof val === 'number' && NON_DIMENSION_PROPS.hasOwnProperty(prop)) {
 				str += 'px'
