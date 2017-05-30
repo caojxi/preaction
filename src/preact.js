@@ -17,7 +17,7 @@ hooks.vnode = ({ attributes }) => {
 
 	let s = attributes.style
 	if (s && !s.substring) {
-		attributes.style = styleObjToCss(S)
+		attributes.style = styleObjToCss(s)
 	}
 
 	let c = attributes['class']
@@ -93,7 +93,7 @@ export function h(nodeName, attributes, ...args) {
 
 			for (let j = 0; j < arr.length; j++) {
 				let child = arr[j]
-					simple = notEmpty(child) && !isVNode(child)
+				let	simple = notEmpty(child) && !isVNode(child)
 
 				if (simple) child = String(child)
 
