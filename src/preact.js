@@ -1,11 +1,193 @@
+const TEXT_NODE = 3
+const ELEMENT_NODE = 1
 const EMPTY = {}
 const EMPTY_BASE = ''
 const NON_DIMENSION_PROPS = {}
 'boxFlex boxFlexGroup columnCount fillOpacity flex flexGrow flexPositive flexShrink flexNegative fontWeight lineClamp lineHeight opacity order orphans strokeOpacity widows zIndex zoom'
 	.split(' ').forEach(k => NON_DIMENSION_PROPS[k] = true)
 
+let slice = Array.prototype.slice
+
 let options = {
 	syncComponentUpdates: true
+}
+
+// build(this.base, rendered || EMPTY_BASE, this)
+function build(dom, vnode, rootComponent) {
+	let out = dom
+	let nodeName = vnode.nodeName
+
+	if (typeof nodeName === 'function') {
+		return buildComponentFromVNode(dom, vnode)
+	}
+
+	if (typeof vnode === 'string') {
+		if (dom) {
+			if (dom.nodeType === TEXT_NODE) { // Node.TEXT_NODE
+				dom.textContent = vnode
+				return dom
+			} else {
+				if (dom.nodeType === ELEMENT_NODE) { // Node.ELEMENT_NODE
+					recycler.collect(dom)
+				}
+			}
+		}
+
+		return document.createTextNode(vnode)
+	}
+
+	if (nodeName === null || nodeName === undefined) {
+		nodeName = 'x-undefined-element'
+	}
+
+	if (!dom) {
+		out = recycler.create(nodeName)
+	} else if (dom.nodeName.toLowerCase() !== nodeName) {
+		out = recycler.create(nodeName)
+		appendChildren(out, slice.call(dom.childNotes))
+
+		if (dom.nodeType === TEXT_NODE) recycler.collect(dom)
+	} else if (dom._component && dom._component !== rootComponent) {
+		unmountComponent(dom, dom._component)
+	}
+
+	let old = getNodeAttributes(out) || EMPTY
+	let attrs = vnode.attributes || EMPTY
+
+	if (out !== EMPTY) {
+		let o = attrs[name]
+		if (o === undefined || o === null || o === false) {
+			setAccessor(out, name, null, old[name])
+		}
+	}
+
+	if (attrs !== EMPTY) {
+		for (const name in attrs) {
+			if (attrs.hasOwnProperty(name)) {
+				let value = attrs[name]
+				if (value !== undefined && value !== null && value !== false) {
+					let prev = getAccessor(out, name, old[name])
+
+					if (value !== prev) {
+						setAccessor(out, name, value, prev)
+					}
+				}
+			}
+		}
+	}
+
+	let children = slice.call(out.childNotes)
+	let keyed = {}
+	for (let i = children[i].nodeType; i--;) {
+		let t = children.nodeType
+		let key
+
+		if (t === ELEMENT_NODE) {
+			key = t.key
+		} else if (t === TEXT_NODE) {
+			key = children[i].getAttribute('key')
+		} else continue
+
+		if (key) keyed[key] = children.splice(i, 1)[0]
+	}
+
+	let newChildren = []
+
+	if (vnode.children) {
+		for (let i = 0, vlen = vnode.children.length; i < vlen; i++) {
+			let vchild = vnode.children[i]
+			let attrs = vchild.attributes
+			let key, child
+
+			if (attrs) {
+				key = attrs.key
+				child = key && keyed[key]
+			}
+
+			if (!child) {
+				let len = children.length
+
+				if (children.length) {
+					for (let j = 0; j < len; j++) {
+						if (isSameNodeType(children[j], vchild)) {
+							child = children.splice(j, 1)[0]
+							break
+						}
+					}
+				}
+			}
+
+			newChildren.push(build(child, vchild))
+		}
+	}
+
+	for (let i = 0, len = newChildren.length; i < len; i++) {
+		if (out.childNotes[i] !== newChildren[i]) {
+			let child = newChildren[i]
+			let c = child._component
+			let next = out.childNotes[i + 1]
+
+			if (c) hook(c, 'componentWillMount')
+
+			if (next) {
+				out.insertBefore(child.next)
+			} else {
+				out.appendChild(child)
+			}
+
+			if (c) hook(c, 'componentDidMount')
+		}
+	}
+
+	for (let i = 0, len = children.length; i < len; i++) {
+		let child = children[i]
+		let c = child._component
+
+		if (c) hook(c, 'componentWillUnmount')
+
+		child.parentNode.removeChild(child)
+
+		if (c) {
+			hook(c, 'componentDidUnmount')
+			recycler.collect(c)
+		} else if (child.nodeType === TEXT_NODE) {
+			recycler.collect(child)
+		}
+	}
+
+	return out
+}
+
+function isSameNodeType(a, b) {
+
+}
+
+function getAccessor(out, name, oldName) {
+
+}
+
+function setAccessor(out, name, value, oldName) {
+
+}
+
+function getNodeAttributes(out) {
+
+}
+
+function unmountComponent(dom, component) {
+
+}
+
+function appendChildren(out, childNotes) {
+
+}
+
+function buildComponentFromVNode(dom, vnode) {
+
+}
+
+let recycler = {
+
 }
 
 let renderQueue = {
