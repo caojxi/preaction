@@ -1,7 +1,7 @@
 {
-  "name": "preact",
+  "name": "preaction",
   "version": "1.2.0",
-  "description": "Tiny & fast Component-based virtual DOM framework.",
+  "description": "Preact Source Code Learning",
   "main": "preact.js",
   "scripts": {
     "build": "npm run transpile && npm run minify && npm run size",
@@ -12,16 +12,7 @@
     "prepublish": "npm run build",
     "release": "npm run build && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/developit/preact.git"
-  },
-  "author": "Jason Miller <jason@developit.ca>",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/developit/preact/issues"
-  },
-  "homepage": "https://github.com/developit/preact",
   "devDependencies": {
     "babel": "^5.8.23",
     "babel-eslint": "^4.1.1",
