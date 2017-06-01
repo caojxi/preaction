@@ -12,6 +12,8 @@ let options = {
 	syncComponentUpdates: true
 }
 
+let hooks = {}
+
 // build(this.base, rendered || EMPTY_BASE, this)
 function build(dom, vnode, rootComponent) {
 	let out = dom
@@ -187,7 +189,29 @@ function buildComponentFromVNode(dom, vnode) {
 }
 
 let recycler = {
+	nodes: {},
+	collect(node) {
+		recycler.clean(node)
+		let name = recycler.normalizeName(node.nodeName)
+		let list = recycler.nodes[name]
 
+		if (list) list.push(node)
+		else recycler.nodes[name] = [node]
+	},
+	create(nodeName) {
+		let name = recycler.normalizeName(nodeName)
+		let list = recycler.nodes[name]
+
+		return list && list.pop() || document.createElement(nodeName)
+	},
+	clean(node) {
+		node.remove()
+		let len = node.attributes && node.attributes.length
+		if (len) for (let i = len; i--;) {
+			node.removeAttribute(node.attributes[i].name)
+		}
+	},
+	normalizeName: memoize(name => name.toUpperCase())
 }
 
 let renderQueue = {
@@ -222,7 +246,7 @@ export class Component {
 		this._dirty = this._disableRendering = false
 		this.nextProps = this.base = null
 		this.props = hook(this, 'getDefaultProps') || {}
-		this.state = hook(this, 'getINitialState') || {}
+		this.state = hook(this, 'getInitialState') || {}
 		hook(this, 'initialize')
 	}
 
@@ -265,12 +289,11 @@ export class Component {
 
 		this._dirty = false
 
+		this.props = this.nextProps
+
 		if (this.base && hook(this, 'shouldComponentUpdate', this.props, this.state) === false) {
-			this.props = this.nextProps
 			return
 		}
-
-		this.props = this.nextProps
 
 		hook(this, 'componentWillUpdate')
 
@@ -299,8 +322,6 @@ export class VNode {
 	}
 }
 VNode.prototype.__isVNode = true
-
-let hooks = {}
 
 hooks.vnode = ({ attributes }) => {
 	if (!attributes) return
