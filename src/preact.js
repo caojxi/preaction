@@ -1,10 +1,14 @@
 const TEXT_NODE = 3
 const ELEMENT_NODE = 1
 const EMPTY = {}
+const NO_RENDER = { render: false }
+const SYNC_RENDER = { renderSync: true }
+const DOM_RENDER = { build: true }
 const EMPTY_BASE = ''
 const NON_DIMENSION_PROPS = {}
-'boxFlex boxFlexGroup columnCount fillOpacity flex flexGrow flexPositive flexShrink flexNegative fontWeight lineClamp lineHeight opacity order orphans strokeOpacity widows zIndex zoom'
-	.split(' ').forEach(k => NON_DIMENSION_PROPS[k] = true)
+'boxFlex boxFlexGroup columnCount fillOpacity flex flexGrow flexPositive ' +
+'flexShrink flexNegative fontWeight lineClamp lineHeight opacity order ' +
+'orphans strokeOpacity widows zIndex zoom'.split(' ').forEach(k => NON_DIMENSION_PROPS[k] = true)
 
 let slice = Array.prototype.slice
 
@@ -13,6 +17,17 @@ let options = {
 }
 
 let hooks = {}
+
+export function render(component, parent) {
+	let built = build(null, component)
+	let c = built._component
+
+	if (c) hook(c, 'componentWillMount')
+	parent.appendChild(built)
+	if (c) hook(c, 'componentDidMount')
+
+	return build;
+}
 
 // build(this.base, rendered || EMPTY_BASE, this)
 function build(dom, vnode, rootComponent) {
@@ -170,9 +185,17 @@ function build(dom, vnode, rootComponent) {
 	return out
 }
 
-function isSameNodeType(a, b) {
+function isSameNodeType(node, vnode) {
+	if (node.nodeType === TEXT_NODE) {
+		return typeof vnode === 'string'
+	}
 
+	const nodeName = vnode.nodeName
+	if (typeof nodeName === 'function') return node._componentConstructor === nodeName
+
+	return node.nodeName.toLowerCase() === nodeName
 }
+
 
 function getAccessor(out, name, oldName) {
 
@@ -186,6 +209,10 @@ function getNodeAttributes(out) {
 
 }
 
+function getNodeProps(vnode) {
+
+}
+
 function unmountComponent(dom, component) {
 
 }
@@ -194,8 +221,21 @@ function appendChildren(out, childNotes) {
 
 }
 
+/**
+ * [buildComponentFromVNode] Apply the component referenced by a VNode to the DOM
+ */
 function buildComponentFromVNode(dom, vnode) {
+	let c = dom && dom._component
 
+	if (c && dom._componentConstructor === vnode.nodeName) {
+		let props = getNodeProps(vnode)
+		c.setProps(props, SYNC_RENDER)
+
+		return dom
+	} else {
+		if (c) unmountComponent(dom, c)
+		return createComponentFromVNode(vnode)
+	}
 }
 
 let componentRecycler = {
