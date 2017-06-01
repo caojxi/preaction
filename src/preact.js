@@ -25,11 +25,11 @@ function build(dom, vnode, rootComponent) {
 
 	if (typeof vnode === 'string') {
 		if (dom) {
-			if (dom.nodeType === TEXT_NODE) { // Node.TEXT_NODE
+			if (dom.nodeType === TEXT_NODE) {
 				dom.textContent = vnode
 				return dom
 			} else {
-				if (dom.nodeType === ELEMENT_NODE) { // Node.ELEMENT_NODE
+				if (dom.nodeType === ELEMENT_NODE) {
 					recycler.collect(dom)
 				}
 			}
@@ -53,20 +53,25 @@ function build(dom, vnode, rootComponent) {
 		unmountComponent(dom, dom._component)
 	}
 
+	// apply attributes
 	let old = getNodeAttributes(out) || EMPTY
 	let attrs = vnode.attributes || EMPTY
 
-	if (out !== EMPTY) {
-		let o = attrs[name]
-		if (o === undefined || o === null || o === false) {
-			setAccessor(out, name, null, old[name])
+	// removed attributes
+	if (old !== EMPTY) {
+		for (const name in old) {
+			const o = attrs[name]
+			if (o === undefined || o === null || o === false) {
+				setAccessor(out, name, null, old[name])
+			}
 		}
 	}
 
+	// new & updated attributes
 	if (attrs !== EMPTY) {
 		for (const name in attrs) {
 			if (attrs.hasOwnProperty(name)) {
-				let value = attrs[name]
+				const value = attrs[name]
 				if (value !== undefined && value !== null && value !== false) {
 					let prev = getAccessor(out, name, old[name])
 
@@ -78,15 +83,17 @@ function build(dom, vnode, rootComponent) {
 		}
 	}
 
+	// build children
 	let children = slice.call(out.childNotes)
 	let keyed = {}
-	for (let i = children[i].nodeType; i--;) {
-		let t = children.nodeType
+
+	for (let i = children.length; i--;) {
+		let t = children[i].nodeType
 		let key
 
-		if (t === ELEMENT_NODE) {
+		if (t === TEXT_NODE) {
 			key = t.key
-		} else if (t === TEXT_NODE) {
+		} else if (t === ELEMENT_NODE) {
 			key = children[i].getAttribute('key')
 		} else continue
 
@@ -106,10 +113,10 @@ function build(dom, vnode, rootComponent) {
 				child = key && keyed[key]
 			}
 
+			// attempt to pluck a node of the same typo from the existing children
 			if (!child) {
 				let len = children.length
-
-				if (children.length) {
+				if (len) {
 					for (let j = 0; j < len; j++) {
 						if (isSameNodeType(children[j], vchild)) {
 							child = children.splice(j, 1)[0]
@@ -119,10 +126,12 @@ function build(dom, vnode, rootComponent) {
 				}
 			}
 
+			// morph the matched/found/created DOM child to match vchild (deep)
 			newChildren.push(build(child, vchild))
 		}
 	}
 
+	// apply the constructed/enhanced ordered list to the parent
 	for (let i = 0, len = newChildren.length; i < len; i++) {
 		if (out.childNotes[i] !== newChildren[i]) {
 			let child = newChildren[i]
@@ -132,7 +141,7 @@ function build(dom, vnode, rootComponent) {
 			if (c) hook(c, 'componentWillMount')
 
 			if (next) {
-				out.insertBefore(child.next)
+				out.insertBefore(child, next)
 			} else {
 				out.appendChild(child)
 			}
@@ -141,6 +150,7 @@ function build(dom, vnode, rootComponent) {
 		}
 	}
 
+	// remove orphaned children
 	for (let i = 0, len = children.length; i < len; i++) {
 		let child = children[i]
 		let c = child._component
@@ -151,8 +161,8 @@ function build(dom, vnode, rootComponent) {
 
 		if (c) {
 			hook(c, 'componentDidUnmount')
-			recycler.collect(c)
-		} else if (child.nodeType === TEXT_NODE) {
+			componentRecycler.collect(c)
+		} else if (child.nodeType === ELEMENT_NODE) {
 			recycler.collect(child)
 		}
 	}
@@ -186,6 +196,26 @@ function appendChildren(out, childNotes) {
 
 function buildComponentFromVNode(dom, vnode) {
 
+}
+
+let componentRecycler = {
+	components: [],
+	collect(component) {
+		let name = component.constructor.name
+		let list = componentRecycler.component[name] || (componentRecycler.components[name] = [])
+
+		list.push(component)
+	},
+	create(ctor) {
+		let name = ctor.name
+		let list = componentRecycler.components[name]
+
+		if (list && list.length) {
+			return list.splice(0, 1)[0]
+		}
+
+		return new ctor()
+	}
 }
 
 let recycler = {
